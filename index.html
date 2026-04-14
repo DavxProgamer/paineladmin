@@ -2,104 +2,91 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel VIP</title>
 
 <style>
 body {
-  background: #0d0d0d;
+  background: #0a0a0a;
   color: #fff;
   font-family: Arial;
   margin: 0;
-}
-
-header {
   padding: 20px;
+}
+
+h1 {
   text-align: center;
-  font-size: 24px;
-  background: #111;
-  border-bottom: 1px solid red;
-  box-shadow: 0 0 10px red;
+  margin-bottom: 20px;
 }
 
-.container {
-  padding: 15px;
-}
-
+/* BOTÕES */
 button {
-  background: #1a1a1a;
+  background: #111;
   color: #fff;
-  border: 1px solid red;
+  border: 1px solid #0099FF;
   padding: 10px;
   margin: 5px;
   cursor: pointer;
+  border-radius: 12px;
   transition: 0.3s;
 }
 
 button:hover {
-  background: red;
-  box-shadow: 0 0 10px red;
+  background: #0099FF;
+  box-shadow: 0 0 10px #0099FF;
 }
 
 .ativo {
-  background: red;
-  box-shadow: 0 0 15px red;
+  background: #0099FF;
 }
 
-input, select {
+/* INPUTS */
+input {
   background: #111;
   border: 1px solid #333;
   color: #fff;
   padding: 10px;
   margin: 5px;
+  border-radius: 10px;
 }
 
+/* CARDS */
 .card {
   background: #111;
-  border: 1px solid red;
-  padding: 10px;
-  margin-bottom: 10px;
-  box-shadow: 0 0 10px red;
+  border: 1px solid #0099FF;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 15px;
+  box-shadow: 0 0 10px rgba(0,153,255,0.3);
 }
 
 .expirado {
-  border-color: #ff0000;
-  box-shadow: 0 0 20px red;
+  border-color: red;
 }
 </style>
 
 </head>
 <body>
 
-<header>Painel VIP 🔴</header>
+<h1>Painel de Clientes 🔵</h1>
 
-<div class="container">
-
-  <!-- ABAS -->
-  <div>
-    <button onclick="trocarAba('mestre')" id="btn-mestre">VIP Mestre</button>
-    <button onclick="trocarAba('diamante')" id="btn-diamante">VIP Diamante</button>
-    <button onclick="trocarAba('bronze')" id="btn-bronze">VIP Bronze</button>
-  </div>
-
-  <!-- FORM -->
-  <div>
-    <input id="nome" placeholder="Nome">
-    <input id="tel" placeholder="Telefone">
-
-    <select id="vip">
-      <option value="mestre">VIP Mestre</option>
-      <option value="diamante">VIP Diamante</option>
-      <option value="bronze">VIP Bronze</option>
-    </select>
-
-    <input id="expira" type="date">
-    <button onclick="salvar()">Salvar</button>
-  </div>
-
-  <!-- LISTA -->
-  <div id="lista"></div>
-
+<!-- ABAS -->
+<div>
+  <button onclick="trocarAba('mestre')" id="btn-mestre">Mestre</button>
+  <button onclick="trocarAba('diamante')" id="btn-diamante">Diamante</button>
+  <button onclick="trocarAba('bronze')" id="btn-bronze">Bronze</button>
 </div>
+
+<!-- FORM -->
+<div>
+  <input id="nome" placeholder="Nome">
+  <input id="tel" placeholder="Telefone">
+  <input id="expira" type="date">
+  <button onclick="salvar()">Salvar</button>
+</div>
+
+<!-- LISTA -->
+<div id="lista"></div>
 
 <script type="module">
 
@@ -107,7 +94,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc }
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// 🔑 COLOCA SEUS DADOS AQUI
+// 🔑 SUA CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyDo3_mJs_em60_iPD8RHHD05GhF9Tzk1s4",
   authDomain: "painel-clientes-f1482.firebaseapp.com",
@@ -121,16 +108,30 @@ let abaAtual = "mestre";
 
 // 🔥 SALVAR
 async function salvar() {
-  await addDoc(collection(db, "clientes"), {
-    nome: document.getElementById("nome").value,
-    telefone: document.getElementById("tel").value,
-    vip: document.getElementById("vip").value,
-    expira: document.getElementById("expira").value
-  });
+  try {
+    const nome = document.getElementById("nome").value;
+    const tel = document.getElementById("tel").value;
+    const expira = document.getElementById("expira").value;
+
+    if (!nome || !tel || !expira) {
+      alert("Preenche tudo!");
+      return;
+    }
+
+    await addDoc(collection(db, "clientes"), {
+      nome,
+      telefone: tel,
+      vip: abaAtual, // 🔥 vem da aba
+      expira
+    });
+
+  } catch (e) {
+    console.error("ERRO:", e);
+  }
 }
 
 // 🔴 TROCAR ABA
-window.trocarAba = function(vip) {
+function trocarAba(vip) {
   abaAtual = vip;
 
   document.querySelectorAll("button").forEach(b => b.classList.remove("ativo"));
@@ -155,6 +156,7 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
         <div class="card ${expirado(c.expira) ? 'expirado' : ''}">
           <strong>${c.nome}</strong><br>
           📞 ${c.telefone}<br>
+          💎 VIP: ${c.vip}<br>
           ⏳ Expira: ${c.expira}<br>
           <button onclick="deletar('${docSnap.id}')">Excluir</button>
         </div>
@@ -164,9 +166,14 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
 });
 
 // 🗑️ DELETE
-window.deletar = async function(id) {
+async function deletar(id) {
   await deleteDoc(doc(db, "clientes", id));
-};
+}
+
+// 🔥 GLOBAL (IMPORTANTE)
+window.salvar = salvar;
+window.trocarAba = trocarAba;
+window.deletar = deletar;
 
 // INICIAL
 trocarAba("mestre");
