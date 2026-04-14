@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Painel VIP</title>
+
+<style>
+body {
+  background: #0d0d0d;
+  color: #fff;
+  font-family: Arial;
+  margin: 0;
+}
+
+header {
+  padding: 20px;
+  text-align: center;
+  font-size: 24px;
+  background: #111;
+  border-bottom: 1px solid red;
+  box-shadow: 0 0 10px red;
+}
+
+.container {
+  padding: 15px;
+}
+
+button {
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid red;
+  padding: 10px;
+  margin: 5px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: red;
+  box-shadow: 0 0 10px red;
+}
+
+.ativo {
+  background: red;
+  box-shadow: 0 0 15px red;
+}
+
+input, select {
+  background: #111;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 10px;
+  margin: 5px;
+}
+
+.card {
+  background: #111;
+  border: 1px solid red;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 0 10px red;
+}
+
+.expirado {
+  border-color: #ff0000;
+  box-shadow: 0 0 20px red;
+}
+</style>
+
+</head>
+<body>
+
+<header>Painel VIP 🔴</header>
+
+<div class="container">
+
+  <!-- ABAS -->
+  <div>
+    <button onclick="trocarAba('mestre')" id="btn-mestre">VIP Mestre</button>
+    <button onclick="trocarAba('diamante')" id="btn-diamante">VIP Diamante</button>
+    <button onclick="trocarAba('bronze')" id="btn-bronze">VIP Bronze</button>
+  </div>
+
+  <!-- FORM -->
+  <div>
+    <input id="nome" placeholder="Nome">
+    <input id="tel" placeholder="Telefone">
+
+    <select id="vip">
+      <option value="mestre">VIP Mestre</option>
+      <option value="diamante">VIP Diamante</option>
+      <option value="bronze">VIP Bronze</option>
+    </select>
+
+    <input id="expira" type="date">
+    <button onclick="salvar()">Salvar</button>
+  </div>
+
+  <!-- LISTA -->
+  <div id="lista"></div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc }
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// 🔑 COLOCA SEUS DADOS AQUI
+const firebaseConfig = {
+  apiKey: "AIzaSyDo3_mJs_em60_iPD8RHHD05GhF9Tzk1s4",
+  authDomain: "painel-clientes-f1482.firebaseapp.com",
+  projectId: "painel-clientes-f1482",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let abaAtual = "mestre";
+
+// 🔥 SALVAR
+async function salvar() {
+  await addDoc(collection(db, "clientes"), {
+    nome: document.getElementById("nome").value,
+    telefone: document.getElementById("tel").value,
+    vip: document.getElementById("vip").value,
+    expira: document.getElementById("expira").value
+  });
+}
+
+// 🔴 TROCAR ABA
+window.trocarAba = function(vip) {
+  abaAtual = vip;
+
+  document.querySelectorAll("button").forEach(b => b.classList.remove("ativo"));
+  document.getElementById("btn-" + vip).classList.add("ativo");
+}
+
+// ⏰ EXPIRAÇÃO
+function expirado(data) {
+  return new Date(data) < new Date();
+}
+
+// 📡 TEMPO REAL
+onSnapshot(collection(db, "clientes"), (snapshot) => {
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  snapshot.forEach(docSnap => {
+    const c = docSnap.data();
+
+    if (c.vip === abaAtual) {
+      lista.innerHTML += `
+        <div class="card ${expirado(c.expira) ? 'expirado' : ''}">
+          <strong>${c.nome}</strong><br>
+          📞 ${c.telefone}<br>
+          ⏳ Expira: ${c.expira}<br>
+          <button onclick="deletar('${docSnap.id}')">Excluir</button>
+        </div>
+      `;
+    }
+  });
+});
+
+// 🗑️ DELETE
+window.deletar = async function(id) {
+  await deleteDoc(doc(db, "clientes", id));
+};
+
+// INICIAL
+trocarAba("mestre");
+
+</script>
+
+</body>
+</html>
